@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="UTF-8">
-<title>สแกนสมองไอ้ขี้บิด v28.0</title>
+<title>สแกนสมองไอ้ขี้บิด v28.0 - Platinum Edition</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700;900&display=swap');
 
@@ -45,6 +45,7 @@ body {
     position: relative;
     overflow: hidden;
     animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-align: center;
 }
 
 @keyframes popIn {
@@ -152,14 +153,31 @@ input[type="text"] {
 .normal-ending { background: #ffaa00 !important; }
 .good-ending { background: #00ff88 !important; }
 
-#visualBox {
-    transition: all 0.5s ease;
-}
-
 #score, #stepDisplay {
     font-weight: 900;
     font-size: 1.2em;
 }
+
+/* Leaderboard Styling */
+#leaderboard {
+    margin: 20px 0;
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 20px;
+    border: 4px solid var(--dark);
+    text-align: left;
+}
+.rank-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 10px;
+    border-bottom: 2px dashed #ccc;
+    font-weight: bold;
+    font-size: 18px;
+}
+.rank-item:last-child { border-bottom: none; }
+.rank-name { color: var(--dark); }
+.rank-score { color: var(--secondary); }
 
 #warningOverlay div {
     animation: shake 0.5s infinite;
@@ -181,7 +199,6 @@ input[type="text"] {
 <audio id="snd_exit" preload="auto" src="https://www.myinstants.com/media/sounds/discord-leave.mp3"></audio>
 <audio id="snd_correct" preload="auto" src="https://www.myinstants.com/media/sounds/kids_cheering.mp3"></audio>
 <audio id="snd_wrong" preload="auto" src="https://www.myinstants.com/media/sounds/999-social-credit-siren.mp3"></audio>
-
 <audio id="snd_badend" preload="auto" src="https://www.myinstants.com/media/sounds/meme-de-credito-social-negativo.mp3"></audio>
 <audio id="snd_normalend" preload="auto" src="https://www.myinstants.com/media/sounds/suoneria-wii.mp3"></audio>
 <audio id="snd_goodend" preload="auto" src="https://www.myinstants.com/media/sounds/ffvii-victory-fanfare_cut.mp3"></audio>
@@ -235,20 +252,24 @@ input[type="text"] {
     </div>
     <h2 id="reward" style="background: yellow; padding: 5px;"></h2>
     <h1>คะแนน: <span id="finalScore"></span></h1>
+
+    <div id="leaderboard">
+        <h3 style="margin:0 0 10px 0; text-align:center;">🏆 อันดับคนสมองสแตนเลส</h3>
+        <div id="rankList"></div>
+    </div>
+
     <button onclick="location.reload()">เกิดใหม่</button>
+    <button onclick="clearLeaderboard()" style="min-width:120px; font-size:14px; background:#f0f0f0;">ล้างกระดาน</button>
 </div>
 
 <script>
 let score = 0, step = 0, timeLeft = 10, timerInterval = null, shuffled = [];
+let playerName = "";
 
 function stopAllSounds() {
-    const sounds = ['snd_start', 'snd_exit', 'snd_correct', 'snd_wrong', 'snd_badend', 'snd_normalend', 'snd_goodend'];
-    sounds.forEach(id => {
+    ['snd_start', 'snd_exit', 'snd_correct', 'snd_wrong', 'snd_badend', 'snd_normalend', 'snd_goodend'].forEach(id => {
         const s = document.getElementById(id);
-        if (s) {
-            s.pause();
-            s.currentTime = 0;
-        }
+        if (s) { s.pause(); s.currentTime = 0; }
     });
 }
 
@@ -256,13 +277,8 @@ function playSound(id) {
     const audio = document.getElementById(id);
     if (audio) {
         audio.load();
-        audio.pause();
         audio.currentTime = 0;
-        audio.volume = 1.0; 
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(e => console.log("Audio Error:", e));
-        }
+        audio.play().catch(e => console.log("Audio Error"));
     }
 }
 
@@ -280,7 +296,8 @@ function show(id) {
 function goName() { show("nameScreen"); }
 
 function startGame() {
-    if(!document.getElementById("playerNameInput").value) return alert("ใส่ชื่อมา!");
+    playerName = document.getElementById("playerNameInput").value.trim();
+    if(!playerName) return alert("ใส่ชื่อมาไอ้ขี้บิด!");
     show("gameScreen");
     loadEvent();
 }
@@ -325,12 +342,12 @@ function choose(idx) {
     const resBox = document.getElementById("resultBox");
     if (idx !== -1 && shuffled[idx].correct) {
         score += 10;
-        document.getElementById("resultText").innerText = "+999 Social Credit!";
+        document.getElementById("resultText").innerText = "เซลล์ในสมองเพิ่มขึ้น 0.01%";
         document.getElementById("resultImg").src = "https://i.pinimg.com/736x/43/0d/eb/430debc721c9207b83fa72ec44401b0c.jpg";
         playSound('snd_correct');
     } else {
         score -= 5;
-        document.getElementById("resultText").innerText = "ควายจริงๆ";
+        document.getElementById("resultText").innerText = "โคกระบือเรียกพี่";
         document.getElementById("resultImg").src = "https://i.pinimg.com/736x/13/24/2e/13242ee2e50325d91126ba7b2545ec81.jpg";
         playSound('snd_wrong');
     }
@@ -345,32 +362,68 @@ function nextQuestion() {
 
 function endGame() {
     clearInterval(timerInterval);
-    stopAllSounds(); // หยุดเสียงที่ค้างอยู่ทั้งหมด
+    stopAllSounds(); 
     show("endScreen");
     document.getElementById("finalScore").innerText = score;
+
+    // ระบบบันทึกคะแนนและแสดงผล
+    saveScore(playerName, score);
+    displayLeaderboard();
+
     const title = document.getElementById("endingTitle");
     const text = document.getElementById("endingText");
     const reward = document.getElementById("reward");
     const vBox = document.getElementById("visualBox");
 
     if (score < 50) {
-        vBox.className = "bad-ending";
+        vBox.className = "screen bad-ending";
         title.innerText = "Bad Ending (ฉากจบ: บัวใต้ตม)";
         text.innerText = "ยินดีด้วย! มิจฉาชีพยิ้มหวานเลยแบบนี้ ข้อมูลมึงหลุดไปถึงดาวอังคารแล้ว แนะนำให้ถอดปลั๊กเน็ตแล้วกลับไปใช้จดหมายเถอะ";
         reward.innerText = "🥈 ของรางวัล: เหรียญสังกะสีผสมขี้ธูป";
         playSound('snd_badend');
     } else if (score >= 50 && score < 80) {
-        vBox.className = "normal-ending";
+        vBox.className = "screen normal-ending";
         title.innerText = "Normal Ending (ฉากจบ: คนเกือบฉลาด)";
         text.innerText = "รอดมาได้แบบหวุดหวิด ความฉลาดมึงอยู่ระดับเดียวกับปลาทองที่จำรหัสผ่านได้แค่ 3 วินาที พัฒนาต่อไปครับ";
         reward.innerText = "🥇 ของรางวัล: เหรียญทองแดงชุบสีน้ำมันตราพัด";
         playSound('snd_normalend');
     } else {
-        vBox.className = "good-ending";
+        vBox.className = "screen good-ending";
         title.innerText = "Good Ending (ฉากจบ: ยอดมนุษย์ดิจิทัล)";
         text.innerText = "สมองมึงทำด้วยสแตนเลสหรือไง? มิจฉาชีพทักมามิจฉาชีพยังร้องไห้ มึงคือพระเจ้าแห่งโลกอินเทอร์เน็ตที่แท้ทรู!";
         reward.innerText = "🏆 ของรางวัล: เหรียญทองคำ (ปลอม)";
         playSound('snd_goodend');
+    }
+}
+
+// ฟังก์ชัน Leaderboard
+function saveScore(name, finalScore) {
+    let leaderboard = JSON.parse(localStorage.getItem("scannerRanks")) || [];
+    leaderboard.push({ name: name, score: finalScore });
+    leaderboard.sort((a, b) => b.score - a.score);
+    leaderboard = leaderboard.slice(0, 5); // เก็บ Top 5
+    localStorage.setItem("scannerRanks", JSON.stringify(leaderboard));
+}
+
+function displayLeaderboard() {
+    let leaderboard = JSON.parse(localStorage.getItem("scannerRanks")) || [];
+    const list = document.getElementById("rankList");
+    if(leaderboard.length === 0) {
+        list.innerHTML = "<p style='text-align:center;'>ยังไม่มีคนหลงเข้ามาเล่น...</p>";
+        return;
+    }
+    list.innerHTML = leaderboard.map((item, index) => `
+        <div class="rank-item">
+            <span class="rank-name">#${index + 1} ${item.name}</span>
+            <span class="rank-score">${item.score} แต้ม</span>
+        </div>
+    `).join("");
+}
+
+function clearLeaderboard() {
+    if(confirm("แน่ใจนะว่าจะล้างกระดาน? อันดับที่อุตส่าห์สะสมมาจะหายวับไปกับตานะไอ้หนู!")) {
+        localStorage.removeItem("scannerRanks");
+        displayLeaderboard();
     }
 }
 </script>
