@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>สแกนสมองไอ้ขี้บิด v28.0</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;700;900&display=swap');
+
+:root {
+    --primary: #ffde59;
+    --secondary: #ff3131;
+    --accent: #00bf63;
+    --dark: #1a1a1a;
+    --white: #ffffff;
+}
+
+body {
+    font-family: 'Kanit', sans-serif;
+    background-color: var(--primary);
+    background-image: 
+        linear-gradient(45deg, #e5c122 25%, transparent 25%), 
+        linear-gradient(-45deg, #e5c122 25%, transparent 25%), 
+        linear-gradient(45deg, transparent 75%, #e5c122 75%), 
+        linear-gradient(-45deg, transparent 75%, #e5c122 75%);
+    background-size: 40px 40px;
+    background-position: 0 0, 0 20px, 20px -20px, -20px 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    color: var(--dark);
+}
+
+.screen {
+    display: none;
+    background: var(--white);
+    padding: 40px;
+    border-radius: 40px;
+    max-width: 550px;
+    width: 100%;
+    border: 10px solid var(--dark);
+    box-shadow: 15px 15px 0px var(--dark);
+    position: relative;
+    overflow: hidden;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
+    0% { transform: scale(0.8) rotate(-2deg); opacity: 0; }
+    100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+
+h1 { font-weight: 900; text-transform: uppercase; line-height: 1.1; margin-bottom: 20px; }
+h2 { font-weight: 700; }
+
+button {
+    width: auto;
+    min-width: 180px;
+    padding: 18px 30px;
+    margin: 10px;
+    font-size: 22px;
+    font-weight: 900;
+    cursor: pointer;
+    background: var(--white);
+    border: 6px solid var(--dark);
+    border-radius: 20px;
+    box-shadow: 6px 6px 0px var(--dark);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-family: 'Kanit', sans-serif;
+}
+
+button:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 10px 10px 0px var(--dark);
+    background-color: var(--primary);
+}
+
+button:active {
+    transform: translate(4px, 4px);
+    box-shadow: 0px 0px 0px var(--dark);
+}
+
+#timer {
+    font-size: 80px;
+    font-weight: 900;
+    color: var(--secondary);
+    text-shadow: 4px 4px 0px #000;
+    margin: 10px 0;
+    line-height: 1;
+}
+
+.meme-img {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    border: 6px solid var(--dark);
+    border-radius: 25px;
+    margin: 20px 0;
+    background: #f0f0f0;
+}
+
+input[type="text"] {
+    width: 90%;
+    padding: 20px;
+    font-size: 24px;
+    font-weight: bold;
+    border: 6px solid var(--dark);
+    border-radius: 20px;
+    text-align: center;
+    background: #fff;
+    margin-bottom: 20px;
+    outline: none;
+}
+
+#resultBox {
+    display: none; 
+    position: fixed; 
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); 
+    background: white;
+    border: 10px solid var(--dark);
+    padding: 30px;
+    width: 85%;
+    max-width: 450px;
+    z-index: 1000;
+    border-radius: 30px;
+    box-shadow: 15px 15px 0px var(--dark), 0 0 0 5000px rgba(0,0,0,0.7);
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+#resultImg {
+    width: 200px !important;
+    height: auto;
+    margin-bottom: 15px;
+    border: 5px solid var(--dark);
+    border-radius: 20px;
+}
+
+#resultBox button {
+    width: 100%;
+    max-width: 200px;
+    margin-top: 20px;
+    background-color: var(--primary);
+}
+
+.bad-ending { background: #ff4d4d !important; color: #fff !important; }
+.normal-ending { background: #ffaa00 !important; }
+.good-ending { background: #00ff88 !important; }
+
+#visualBox {
+    transition: all 0.5s ease;
+}
+
+#score, #stepDisplay {
+    font-weight: 900;
+    font-size: 1.2em;
+}
+
+#warningOverlay div {
+    animation: shake 0.5s infinite;
+}
+
+@keyframes shake {
+    0% { transform: translate(1px, 1px) rotate(0deg); }
+    10% { transform: translate(-1px, -2px) rotate(-1deg); }
+    20% { transform: translate(-3px, 0px) rotate(1deg); }
+    30% { transform: translate(3px, 2px) rotate(0deg); }
+    40% { transform: translate(1px, -1px) rotate(1deg); }
+    50% { transform: translate(-1px, 2px) rotate(-1deg); }
+}
+</style>
+</head>
+<body>
+
+<audio id="snd_start" preload="auto" src="https://www.myinstants.com/media/sounds/discord-join.mp3"></audio> 
+<audio id="snd_exit" preload="auto" src="https://www.myinstants.com/media/sounds/discord-leave.mp3"></audio>
+<audio id="snd_correct" preload="auto" src="https://www.myinstants.com/media/sounds/kids_cheering.mp3"></audio>
+<audio id="snd_wrong" preload="auto" src="https://www.myinstants.com/media/sounds/999-social-credit-siren.mp3"></audio>
+
+<audio id="snd_badend" preload="auto" src="https://www.myinstants.com/media/sounds/meme-de-credito-social-negativo.mp3"></audio>
+<audio id="snd_normalend" preload="auto" src="https://www.myinstants.com/media/sounds/suoneria-wii.mp3"></audio>
+<audio id="snd_goodend" preload="auto" src="https://www.myinstants.com/media/sounds/ffvii-victory-fanfare_cut.mp3"></audio>
+
+<div id="warningOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background:#000; z-index:9999; display:flex; justify-content:center; align-items:center;">
+    <div style="background:#fff; padding:30px; border:8px solid #ff0000; border-radius:20px; text-align:center; max-width:450px;">
+        <h2 style="color:red;">คำเตือน!!!</h2>
+        <p style="font-weight:bold;">
+            เหมาะสำหรับผู้เล่นที่มีอายุตั้งแต่อยู่ในครรภ์ขึ้นไป<br>
+            อาจมีภาพ เสียง หรือเนื้อหาที่เหมาะสมแก่การรับชม<br>
+            ผู้ใดที่อายุเกิน 100 ปี คุณอายุยืน ขอบคุณครับ
+        </p>
+        <button onclick="startApp()">เออ..เริ่มดิ!</button>
+    </div>
+</div>
+
+<div id="startScreen" class="screen">
+    <h1 style="font-size: 35px;">สแกนสมองดิจิทัล <br><span style="color:#ff0000;">Social Credit Test</span></h1>
+    <img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExOHIwd3p4bjF4ZTRnd3p4bjF4ZTRnd3p4bjF4ZTRnd3p4bjF4ZTRndyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/VTxmwaCEwSlZm/giphy.gif" class="meme-img">
+    <br><button onclick="goName()">สแกนกูหน่อยดิ๊!</button>
+    <button onclick="playSound('snd_exit')">กดออก</button>
+</div>
+
+<div id="nameScreen" class="screen">
+    <h2>ชื่อมึงคือไร?</h2>
+    <input id="playerNameInput" type="text" placeholder="ใส่ชื่อไอ้ขี้บิด...">
+    <br><br><button onclick="startGame()">ตกลง</button>
+</div>
+
+<div id="gameScreen" class="screen">
+    <div id="timer">10</div>
+    <img id="eventImg" class="meme-img">
+    <p id="npcText" style="font-size:22px; font-weight:900;"></p>
+    <div id="choiceContainer">
+        <button id="choice1" style="width:100%;"></button>
+        <button id="choice2" style="width:100%;"></button>
+    </div>
+    <p>แต้ม: <span id="score" style="color:blue;">0</span> | ข้อที่: <span id="stepDisplay">1</span>/10</p>
+
+    <div id="resultBox">
+        <img id="resultImg" style="width:140px; border-radius: 10px;">
+        <h2 id="resultText"></h2>
+        <button onclick="nextQuestion()">ไปต่อ!</button>
+    </div>
+</div>
+
+<div id="endScreen" class="screen">
+    <h1 id="endingTitle"></h1>
+    <div id="visualBox" style="padding: 20px; border-radius: 20px; border: 5px solid #000; margin: 15px 0;">
+        <p id="endingText" style="font-size:18px; font-weight: bold;"></p>
+    </div>
+    <h2 id="reward" style="background: yellow; padding: 5px;"></h2>
+    <h1>คะแนน: <span id="finalScore"></span></h1>
+    <button onclick="location.reload()">เกิดใหม่</button>
+</div>
+
+<script>
+let score = 0, step = 0, timeLeft = 10, timerInterval = null, shuffled = [];
+
+function stopAllSounds() {
+    const sounds = ['snd_start', 'snd_exit', 'snd_correct', 'snd_wrong', 'snd_badend', 'snd_normalend', 'snd_goodend'];
+    sounds.forEach(id => {
+        const s = document.getElementById(id);
+        if (s) {
+            s.pause();
+            s.currentTime = 0;
+        }
+    });
+}
+
+function playSound(id) {
+    const audio = document.getElementById(id);
+    if (audio) {
+        audio.load();
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 1.0; 
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => console.log("Audio Error:", e));
+        }
+    }
+}
+
+function startApp() {
+    document.getElementById("warningOverlay").style.display = "none";
+    playSound('snd_start');
+    show("startScreen");
+}
+
+function show(id) {
+    document.querySelectorAll(".screen").forEach(s => s.style.display = "none");
+    document.getElementById(id).style.display = "block";
+}
+
+function goName() { show("nameScreen"); }
+
+function startGame() {
+    if(!document.getElementById("playerNameInput").value) return alert("ใส่ชื่อมา!");
+    show("gameScreen");
+    loadEvent();
+}
+
+const events = [
+    { text: "ขอยืมบัตรประชาชนถ่ายรูปหน่อย จะเอาไปยืนยันตัวตนเกม", img: "https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExN3U0Znd6amZ3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3Z3JmVwPXYxX2ludGVybmFsX2dpZl9ieV9pZCZjdD1n/Ke4eLjnzXG0vS/giphy.gif", choices: [{ text: "ด่ายันโคตร!", correct: true }, { text: "ช่วยเค้าหน่อย", correct: false }] },
+    { text: "เพจปลอมแจกเงิน 5,000 แค่กดแชร์ลิงก์", img: "https://media.giphy.com/media/67Thrz6jnfjvW/giphy.gif", choices: [{ text: "รายงานแม่ง!", correct: true }, { text: "แชร์วนไป", correct: false }] },
+    { text: "SMS: 'เงินกู้ดอกเบี้ย 0% อนุมัติไว'", img: "https://media.giphy.com/media/MC6eSuC3yypCU/giphy.gif", choices: [{ text: "ลบทิ้ง", correct: true }, { text: "ลองกู้ดู", correct: false }] },
+    { text: "เพื่อนส่งไฟล์ 'Hack_Robux.exe' มาให้", img: "https://media.giphy.com/media/f9eYteW8NmXJ8G234F/giphy.gif", choices: [{ text: "อย่าหาทำ!", correct: true }, { text: "เปิดเลย!", correct: false }] },
+    { text: "สายโทรมา: 'คุณมีพัสดุผิดกฎหมาย'", img: "https://media.giphy.com/media/VTxmwaCEwSlZm/giphy.gif", choices: [{ text: "วางสาย", correct: true }, { text: "โอนเงินตรวจสอบ", correct: false }] },
+    { text: "เว็บสุ่มบัตรฟรี แต่ต้องกรอกเบอร์/OTP", img: "https://media.giphy.com/media/l41lXkx9x8OTM1rwY/giphy.gif", choices: [{ text: "ปิดหนี!", correct: true }, { text: "กรอกจ้า", correct: false }] },
+    { text: "แอปแต่งรูปขอสิทธิ์เข้าถึงทุกอย่าง", img: "https://media.giphy.com/media/3o7TKVUn7iM8FMEU24/giphy.gif", choices: [{ text: "ไม่ให้!", correct: true }, { text: "อนุญาต", correct: false }] },
+    { text: "โฆษณา: 'ลงทุนพันได้หมื่นในชั่วโมงเดียว'", img: "https://media.giphy.com/media/l2R013mIf1ZXdvoyI/giphy.gif", choices: [{ text: "มิจชัวร์!", correct: true }, { text: "ลุยยย", correct: false }] },
+    { text: "คนโพสต์ด่าเราในเน็ตแบบไร้เหตุผล", img: "https://media.giphy.com/media/3o7TKuAfCHifvPdcxG/giphy.gif", choices: [{ text: "บล็อกแม่ง", correct: true }, { text: "ด่ากลับ!", correct: false }] },
+    { text: "SMS ธนาคารปลอม ให้กดอัปเดตข้อมูล", img: "https://media.giphy.com/media/YQitE4YNQNahy/giphy.gif", choices: [{ text: "ไปแบงค์เอง", correct: true }, { text: "กดลิงก์", correct: false }] }
+];
+
+function loadEvent() {
+    clearInterval(timerInterval);
+    timeLeft = 10;
+    document.getElementById("timer").innerText = timeLeft;
+    document.getElementById("resultBox").style.display = "none";
+    document.getElementById("stepDisplay").innerText = step + 1;
+    const current = events[step];
+    document.getElementById("npcText").innerText = current.text;
+    document.getElementById("eventImg").src = current.img;
+    shuffled = [...current.choices].sort(() => Math.random() - 0.5);
+    document.getElementById("choice1").innerText = shuffled[0].text;
+    document.getElementById("choice2").innerText = shuffled[1].text;
+    document.getElementById("choice1").onclick = () => choose(0);
+    document.getElementById("choice2").onclick = () => choose(1);
+
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = timeLeft;
+        if(timeLeft <= 0) choose(-1);
+    }, 1000);
+}
+
+function choose(idx) {
+    clearInterval(timerInterval);
+    const resBox = document.getElementById("resultBox");
+    if (idx !== -1 && shuffled[idx].correct) {
+        score += 10;
+        document.getElementById("resultText").innerText = "+999 Social Credit!";
+        document.getElementById("resultImg").src = "https://i.pinimg.com/736x/43/0d/eb/430debc721c9207b83fa72ec44401b0c.jpg";
+        playSound('snd_correct');
+    } else {
+        score -= 5;
+        document.getElementById("resultText").innerText = "ควายจริงๆ";
+        document.getElementById("resultImg").src = "https://i.pinimg.com/736x/13/24/2e/13242ee2e50325d91126ba7b2545ec81.jpg";
+        playSound('snd_wrong');
+    }
+    document.getElementById("score").innerText = score;
+    resBox.style.display = "flex";
+}
+
+function nextQuestion() {
+    step++;
+    if (step < events.length) loadEvent(); else endGame();
+}
+
+function endGame() {
+    clearInterval(timerInterval);
+    stopAllSounds(); // หยุดเสียงที่ค้างอยู่ทั้งหมด
+    show("endScreen");
+    document.getElementById("finalScore").innerText = score;
+    const title = document.getElementById("endingTitle");
+    const text = document.getElementById("endingText");
+    const reward = document.getElementById("reward");
+    const vBox = document.getElementById("visualBox");
+
+    if (score < 50) {
+        vBox.className = "bad-ending";
+        title.innerText = "Bad Ending (ฉากจบ: บัวใต้ตม)";
+        text.innerText = "ยินดีด้วย! มิจฉาชีพยิ้มหวานเลยแบบนี้ ข้อมูลมึงหลุดไปถึงดาวอังคารแล้ว แนะนำให้ถอดปลั๊กเน็ตแล้วกลับไปใช้จดหมายเถอะ";
+        reward.innerText = "🥈 ของรางวัล: เหรียญสังกะสีผสมขี้ธูป";
+        playSound('snd_badend');
+    } else if (score >= 50 && score < 80) {
+        vBox.className = "normal-ending";
+        title.innerText = "Normal Ending (ฉากจบ: คนเกือบฉลาด)";
+        text.innerText = "รอดมาได้แบบหวุดหวิด ความฉลาดมึงอยู่ระดับเดียวกับปลาทองที่จำรหัสผ่านได้แค่ 3 วินาที พัฒนาต่อไปครับ";
+        reward.innerText = "🥇 ของรางวัล: เหรียญทองแดงชุบสีน้ำมันตราพัด";
+        playSound('snd_normalend');
+    } else {
+        vBox.className = "good-ending";
+        title.innerText = "Good Ending (ฉากจบ: ยอดมนุษย์ดิจิทัล)";
+        text.innerText = "สมองมึงทำด้วยสแตนเลสหรือไง? มิจฉาชีพทักมามิจฉาชีพยังร้องไห้ มึงคือพระเจ้าแห่งโลกอินเทอร์เน็ตที่แท้ทรู!";
+        reward.innerText = "🏆 ของรางวัล: เหรียญทองคำ (ปลอม)";
+        playSound('snd_goodend');
+    }
+}
+</script>
+</body>
+</html>
